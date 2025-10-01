@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Animated Counter Page</title>
+    <style>
+      body {
+        font-family: "Poppins", sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        background: linear-gradient(135deg, #6a11cb, #2575fc);
+      }
+
+      .counter-container {
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        text-align: center;
+        transition: transform 0.3s ease;
+      }
+
+      .counter-container:hover {
+        transform: scale(1.02);
+      }
+
+      h2 {
+        margin-bottom: 20px;
+        color: #444;
+      }
+
+      #counter {
+        font-size: 4rem;
+        margin: 20px 0;
+        color: #333;
+        font-weight: bold;
+        transition: transform 0.2s ease;
+      }
+
+      /* Pop animation for counter */
+      .pop {
+        transform: scale(1.3);
+        color: #2575fc;
+      }
+
+      input {
+        padding: 10px;
+        font-size: 18px;
+        width: 120px;
+        text-align: center;
+        margin: 15px 0;
+        border-radius: 10px;
+        border: 2px solid #ccc;
+        transition: 0.3s;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #2575fc;
+        box-shadow: 0 0 8px rgba(37, 117, 252, 0.5);
+      }
+
+      button {
+        padding: 12px 25px;
+        font-size: 18px;
+        margin: 8px;
+        cursor: pointer;
+        border: none;
+        border-radius: 10px;
+        background: #2575fc;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      button:hover {
+        background: #6a11cb;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+      }
+
+      button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .reset-btn {
+        background: #ff4d4d;
+      }
+
+      .reset-btn:hover {
+        background: #e60000;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="counter-container">
+      <h2>✨ Smart Counter ✨</h2>
+      <div id="counter">0</div>
+      <input type="number" id="stepValue" placeholder="Enter number" />
+      <br />
+      <button onclick="decrement()">−</button>
+      <button onclick="increment()">+</button>
+      <button class="reset-btn" onclick="resetCounter()">Reset</button>
+    </div>
+
+    <script>
+      let counterValue = localStorage.getItem("counterValue") ? parseInt(localStorage.getItem("counterValue")) : 0;
+
+      const counterDisplay = document.getElementById("counter");
+      const stepInput = document.getElementById("stepValue");
+
+      // Update counter display with animation
+      function updateDisplay() {
+        counterDisplay.textContent = counterValue;
+        localStorage.setItem("counterValue", counterValue);
+
+        // Add animation
+        counterDisplay.classList.add("pop");
+        setTimeout(() => counterDisplay.classList.remove("pop"), 200);
+      }
+
+      function increment() {
+        const step = parseInt(stepInput.value) || 1;
+        counterValue += step;
+        updateDisplay();
+        stepInput.value = "";
+      }
+
+      function decrement() {
+        const step = parseInt(stepInput.value) || 1;
+        counterValue -= step;
+        updateDisplay();
+        stepInput.value = "";
+      }
+
+      function resetCounter() {
+        counterValue = 0;
+        updateDisplay();
+      }
+
+      updateDisplay();
+    </script>
+  </body>
+</html>
