@@ -2,147 +2,197 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Animated Counter Page</title>
+    <title>Firebase Counter</title>
     <style>
       body {
         font-family: "Poppins", sans-serif;
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-direction: column;
         height: 100vh;
         margin: 0;
         background: linear-gradient(135deg, #6a11cb, #2575fc);
       }
-
       .counter-container {
         background: white;
         padding: 40px;
         border-radius: 20px;
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
         text-align: center;
-        transition: transform 0.3s ease;
+        margin-bottom: 30px;
       }
-
-      .counter-container:hover {
-        transform: scale(1.02);
-      }
-
-      h2 {
-        margin-bottom: 20px;
-        color: #444;
-      }
-
       #counter {
-        font-size: 4rem;
+        font-size: 3rem;
         margin: 20px 0;
         color: #333;
         font-weight: bold;
-        transition: transform 0.2s ease;
       }
-
-      /* Pop animation for counter */
-      .pop {
-        transform: scale(1.3);
-        color: #2575fc;
-      }
-
       input {
         padding: 10px;
-        font-size: 18px;
+        font-size: 16px;
         width: 120px;
-        text-align: center;
-        margin: 15px 0;
-        border-radius: 10px;
-        border: 2px solid #ccc;
-        transition: 0.3s;
+        margin: 5px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
       }
-
-      input:focus {
-        outline: none;
-        border-color: #2575fc;
-        box-shadow: 0 0 8px rgba(37, 117, 252, 0.5);
-      }
-
       button {
-        padding: 12px 25px;
+        padding: 12px 20px;
         font-size: 18px;
-        margin: 8px;
+        margin: 10px;
         cursor: pointer;
         border: none;
-        border-radius: 10px;
+        border-radius: 8px;
         background: #2575fc;
         color: white;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s;
       }
-
       button:hover {
         background: #6a11cb;
-        transform: translateY(-3px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
       }
-
-      button:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      table {
+        width: 80%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
       }
-
-      .reset-btn {
-        background: #ff4d4d;
+      th,
+      td {
+        padding: 12px;
+        border: 1px solid #ddd;
+        text-align: center;
       }
-
-      .reset-btn:hover {
-        background: #e60000;
+      th {
+        background: #2575fc;
+        color: white;
       }
     </style>
   </head>
   <body>
     <div class="counter-container">
-      <h2>✨ Smart Counter ✨</h2>
+      <h2>Smart Counter</h2>
       <div id="counter">0</div>
       <input type="number" id="stepValue" placeholder="Enter number" />
+      <input type="text" id="noteValue" placeholder="Enter note" />
       <br />
       <button onclick="decrement()">−</button>
       <button onclick="increment()">+</button>
-      <button class="reset-btn" onclick="resetCounter()">Reset</button>
+      <button onclick="resetCounter()">Reset</button>
     </div>
 
+    <table id="recordsTable">
+      <thead>
+        <tr>
+          <th>Number</th>
+          <th>Note</th>
+          <th>Type</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
     <script>
-      let counterValue = localStorage.getItem("counterValue") ? parseInt(localStorage.getItem("counterValue")) : 0;
+      // ✅ Replace with your Firebase config
+      const firebaseConfig = {
+        apiKey: "AIzaSyBWC-oPizA2SPvYqNfK9s_ZDNlW-Ng6N2k",
+        authDomain: "soda-b3076.firebaseapp.com",
+        projectId: "soda-b3076",
+        storageBucket: "soda-b3076.firebasestorage.app",
+        messagingSenderId: "258729569728",
+        appId: "1:258729569728:web:c3317dbd7962cf7dcdac25",
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
 
       const counterDisplay = document.getElementById("counter");
       const stepInput = document.getElementById("stepValue");
+      const noteInput = document.getElementById("noteValue");
+      const recordsTableBody = document.querySelector("#recordsTable tbody");
 
-      // Update counter display with animation
+      let counterValue = 0;
+
+      async function loadCounter() {
+        const docRef = db.collection("appData").doc("counterDoc");
+        const docSnap = await docRef.get();
+        if (docSnap.exists) {
+          counterValue = docSnap.data().value;
+          updateDisplay();
+        } else {
+          await docRef.set({ value: 0 });
+          counterValue = 0;
+        }
+      }
+
       function updateDisplay() {
         counterDisplay.textContent = counterValue;
-        localStorage.setItem("counterValue", counterValue);
-
-        // Add animation
-        counterDisplay.classList.add("pop");
-        setTimeout(() => counterDisplay.classList.remove("pop"), 200);
       }
 
-      function increment() {
+      async function increment() {
         const step = parseInt(stepInput.value) || 1;
+        const note = noteInput.value || "N/A";
         counterValue += step;
-        updateDisplay();
+        await saveCounter("Increment", step, note);
         stepInput.value = "";
+        noteInput.value = "";
       }
 
-      function decrement() {
+      async function decrement() {
         const step = parseInt(stepInput.value) || 1;
+        const note = noteInput.value || "N/A";
         counterValue -= step;
-        updateDisplay();
+        await saveCounter("Decrement", step, note);
         stepInput.value = "";
+        noteInput.value = "";
       }
 
-      function resetCounter() {
+      async function resetCounter() {
         counterValue = 0;
+        await db.collection("appData").doc("counterDoc").set({ value: 0 });
         updateDisplay();
       }
 
-      updateDisplay();
+      async function saveCounter(type, step, note) {
+        await db.collection("appData").doc("counterDoc").set({ value: counterValue });
+        await db.collection("records").add({
+          number: step,
+          note: note,
+          type: type,
+          timestamp: new Date(),
+        });
+        updateDisplay();
+      }
+
+      db.collection("records")
+        .orderBy("timestamp", "desc")
+        .onSnapshot((snapshot) => {
+          recordsTableBody.innerHTML = "";
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            const row = `<tr>
+          <td>${data.number}</td>
+          <td>${data.note}</td>
+          <td>${data.type}</td>
+          <td>${data.timestamp.toDate().toLocaleString()}</td>
+        </tr>`;
+            recordsTableBody.innerHTML += row;
+          });
+        });
+
+      // Bind buttons (instead of inline onclick to avoid race)
+      document.getElementById("incBtn").addEventListener("click", increment);
+      document.getElementById("decBtn").addEventListener("click", decrement);
+      document.getElementById("resetBtn").addEventListener("click", resetCounter);
+
+      loadCounter();
     </script>
   </body>
 </html>
