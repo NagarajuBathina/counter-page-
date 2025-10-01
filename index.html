@@ -2,105 +2,102 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Firebase Counter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firebase Counter with DataTables</title>
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+
     <style>
       body {
-        font-family: "Poppins", sans-serif;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        height: 100vh;
-        margin: 0;
-        background: linear-gradient(135deg, #6a11cb, #2575fc);
-      }
-      .counter-container {
-        background: white;
-        padding: 40px;
-        border-radius: 20px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        font-family: Arial, sans-serif;
         text-align: center;
-        margin-bottom: 30px;
+        margin: 20px;
+        background: #f7f9fc;
       }
-      #counter {
-        font-size: 3rem;
+      .counter-box {
+        display: inline-block;
+        padding: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      .counter-value {
+        font-size: 36px;
         margin: 20px 0;
-        color: #333;
         font-weight: bold;
       }
       input {
-        padding: 10px;
-        font-size: 16px;
-        width: 120px;
+        padding: 8px;
         margin: 5px;
-        border-radius: 8px;
         border: 1px solid #ccc;
+        border-radius: 6px;
       }
       button {
-        padding: 12px 20px;
-        font-size: 18px;
-        margin: 10px;
-        cursor: pointer;
+        padding: 10px 16px;
+        margin: 5px;
+        font-size: 16px;
         border: none;
-        border-radius: 8px;
-        background: #2575fc;
-        color: white;
-        transition: all 0.3s;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: 0.2s;
       }
       button:hover {
-        background: #6a11cb;
+        opacity: 0.85;
       }
-      table {
-        width: 80%;
-        border-collapse: collapse;
-        margin-top: 20px;
-        background: white;
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      .plus {
+        background: #4caf50;
+        color: white;
       }
-      th,
-      td {
-        padding: 12px;
-        border: 1px solid #ddd;
-        text-align: center;
-      }
-      th {
-        background: #2575fc;
+      .minus {
+        background: #e53935;
         color: white;
       }
     </style>
   </head>
   <body>
-    <div class="counter-container">
-      <h2>Smart Counter</h2>
-      <div id="counter">0</div>
-      <input type="number" id="stepValue" placeholder="Enter number" />
-      <input type="text" id="noteValue" placeholder="Enter note" />
+    <h1>🔥 Smart Counter 🔥</h1>
+
+    <div class="counter-box">
+      <div class="counter-value" id="valueDisplay">0</div>
+      <input type="number" id="stepInput" placeholder="Enter value" />
+      <input type="text" id="textInput" placeholder="Enter description" />
       <br />
-      <button onclick="decrement()">−</button>
-      <button onclick="increment()">+</button>
-      <button onclick="resetCounter()">Reset</button>
+      <button class="plus" id="btnPlus">+ Add</button>
+      <button class="minus" id="btnMinus">- Subtract</button>
     </div>
 
-    <table id="recordsTable">
+    <h2>History</h2>
+    <table id="counterTable" class="display" style="width: 100%">
       <thead>
         <tr>
-          <th>Number</th>
-          <th>Note</th>
-          <th>Type</th>
-          <th>Timestamp</th>
+          <th style="text-align: center">Value</th>
+          <th style="text-align: center">Type</th>
+          <th style="text-align: center">Description</th>
+          <th style="text-align: center">Time</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <!-- jQuery + DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
-    <script>
-      // ✅ Replace with your Firebase config
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        query,
+        orderBy,
+        onSnapshot,
+      } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
+
+      // 🔥 Your Firebase Config
       const firebaseConfig = {
         apiKey: "AIzaSyBWC-oPizA2SPvYqNfK9s_ZDNlW-Ng6N2k",
         authDomain: "soda-b3076.firebaseapp.com",
@@ -110,89 +107,94 @@
         appId: "1:258729569728:web:c3317dbd7962cf7dcdac25",
       };
 
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.firestore();
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
 
-      const counterDisplay = document.getElementById("counter");
-      const stepInput = document.getElementById("stepValue");
-      const noteInput = document.getElementById("noteValue");
-      const recordsTableBody = document.querySelector("#recordsTable tbody");
+      const valueDisplay = document.getElementById("valueDisplay");
+      const stepInput = document.getElementById("stepInput");
+      const textInput = document.getElementById("textInput");
+      const btnPlus = document.getElementById("btnPlus");
+      const btnMinus = document.getElementById("btnMinus");
 
-      let counterValue = 0;
+      let currentValue = 0;
 
-      async function loadCounter() {
-        const docRef = db.collection("appData").doc("counterDoc");
-        const docSnap = await docRef.get();
-        if (docSnap.exists) {
-          counterValue = docSnap.data().value;
-          updateDisplay();
-        } else {
-          await docRef.set({ value: 0 });
-          counterValue = 0;
-        }
-      }
+      // Initialize DataTable
+      const table = $("#counterTable").DataTable({
+        paging: true,
+        pageLength: 10,
+        ordering: true,
+        order: [[3, "desc"]], // order by time descending
+      });
 
-      function updateDisplay() {
-        counterDisplay.textContent = counterValue;
-      }
-
-      async function increment() {
-        const step = parseInt(stepInput.value) || 1;
-        const note = noteInput.value || "N/A";
-        counterValue += step;
-        await saveCounter("Increment", step, note);
-        stepInput.value = "";
-        noteInput.value = "";
-      }
-
-      async function decrement() {
-        const step = parseInt(stepInput.value) || 1;
-        const note = noteInput.value || "N/A";
-        counterValue -= step;
-        await saveCounter("Decrement", step, note);
-        stepInput.value = "";
-        noteInput.value = "";
-      }
-
-      async function resetCounter() {
-        counterValue = 0;
-        await db.collection("appData").doc("counterDoc").set({ value: 0 });
-        updateDisplay();
-      }
-
-      async function saveCounter(type, step, note) {
-        await db.collection("appData").doc("counterDoc").set({ value: counterValue });
-        await db.collection("records").add({
-          number: step,
-          note: note,
+      // Save new record
+      async function saveCounter(val, type, desc) {
+        await addDoc(collection(db, "counters"), {
+          value: val,
           type: type,
+          description: desc,
           timestamp: new Date(),
         });
-        updateDisplay();
       }
 
-      db.collection("records")
-        .orderBy("timestamp", "desc")
-        .onSnapshot((snapshot) => {
-          recordsTableBody.innerHTML = "";
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            const row = `<tr>
-          <td>${data.number}</td>
-          <td>${data.note}</td>
-          <td>${data.type}</td>
-          <td>${data.timestamp.toDate().toLocaleString()}</td>
-        </tr>`;
-            recordsTableBody.innerHTML += row;
-          });
+      // Increment
+      async function increment() {
+        const step = parseInt(stepInput.value);
+        const text = textInput.value || "";
+
+        if (isNaN(step) || step <= 0) {
+          alert("⚠️ Please enter a valid number.");
+          return;
+        }
+
+        await saveCounter(step, "increment", text);
+        stepInput.value = "";
+        textInput.value = "";
+      }
+
+      // Decrement
+      async function decrement() {
+        const step = parseInt(stepInput.value);
+        const text = textInput.value || "";
+
+        if (isNaN(step) || step <= 0) {
+          alert("⚠️ Please enter a valid number.");
+          return;
+        }
+
+        await saveCounter(step, "decrement", text);
+        stepInput.value = "";
+        textInput.value = "";
+      }
+
+      // Bind buttons
+      btnPlus.addEventListener("click", increment);
+      btnMinus.addEventListener("click", decrement);
+
+      // Listen to Firestore updates
+      const q = query(collection(db, "counters"), orderBy("timestamp", "desc"));
+      onSnapshot(q, (snapshot) => {
+        // Clear table
+        table.clear();
+
+        let inc = 0,
+          dec = 0;
+
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          // Calculate current value
+          if (data.type === "increment") inc += data.value;
+          if (data.type === "decrement") dec += data.value;
+
+          // Add row to DataTable
+          table.row.add([data.value, data.type, data.description, new Date(data.timestamp.toDate()).toLocaleString()]);
         });
 
-      // Bind buttons (instead of inline onclick to avoid race)
-      document.getElementById("incBtn").addEventListener("click", increment);
-      document.getElementById("decBtn").addEventListener("click", decrement);
-      document.getElementById("resetBtn").addEventListener("click", resetCounter);
+        table.draw();
 
-      loadCounter();
+        // Update counter value
+        currentValue = inc - dec;
+        valueDisplay.textContent = currentValue;
+      });
     </script>
   </body>
 </html>
