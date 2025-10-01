@@ -84,6 +84,8 @@
       <tbody></tbody>
     </table>
 
+    <button class="reset" id="btnReset" style="background-color: orange; color: white">Reset All</button>
+
     <!-- jQuery + DataTables JS -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -98,6 +100,9 @@
         query,
         orderBy,
         onSnapshot,
+        getDocs,
+        deleteDoc,
+        doc,
       } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
       // 🔥 Your Firebase Config
@@ -168,6 +173,20 @@
         stepInput.value = "";
         textInput.value = "";
       }
+
+      // Reset all records
+      btnReset.addEventListener("click", async () => {
+        const password = prompt("Enter password to reset all records:");
+        if (password !== "123@Apple") {
+          alert("❌ Incorrect password!");
+          return;
+        }
+
+        const snapshot = await getDocs(collection(db, "counters"));
+        const deletePromises = snapshot.docs.map((d) => deleteDoc(doc(db, "counters", d.id)));
+        await Promise.all(deletePromises);
+        alert("✅ All records deleted!");
+      });
 
       // Bind buttons
       btnPlus.addEventListener("click", increment);
